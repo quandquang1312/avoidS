@@ -32,11 +32,16 @@ Game::Game()
     m_score = 0.0f;
 
     // Fonts
-    // font = TTF_OpenFont("../resources/fonts/Eater-Regular.ttf", 15);
+    m_font = TTF_OpenFont("../resources/fonts/Eater-Regular.ttf", 15);
 }
 
 Game::~Game() 
 {
+    if (m_font) TTF_CloseFont(m_font);
+    if (mRenderer) SDL_DestroyRenderer(mRenderer);
+    if (mWindow) SDL_DestroyWindow(mWindow);
+    TTF_Quit();
+    SDL_Quit();
 }
 
 bool Game::init(const std::string title, const int width, const int height)
@@ -101,6 +106,11 @@ bool Game::init(const std::string title, const int width, const int height)
 
 void Game::run()
 {
+    // Showing starting menu
+    showMenu();
+
+    // Game loop
+    /*
     while (mRunning) {
         handleEvents();
         handleCharacter();
@@ -108,6 +118,139 @@ void Game::run()
         renderScore();
         render();
     }
+    */
+}
+
+void Game::showMenu()
+{
+    // Colors for the text
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color selectedColor = {255, 0, 0, 255}; // Red
+
+    // Menu items
+    std::string startText  = "Start Game";
+    std::string creditText = "Credit"; 
+    std::string exitText   = "Exit";
+
+    int selected = 0;
+    int noitems  = 3;
+
+    SDL_Event event;
+    bool menuRunning = true;
+
+    TTF_Font* font = TTF_OpenFont("../resources/fonts/Eater-Regular.ttf", 15);
+
+    while (menuRunning) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                menuRunning = false;
+                mRunning = false;
+            } else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_DOWN) {
+                    selected = (selected + 1) % noitems;
+                } else if (event.key.keysym.sym == SDLK_UP) {
+                    selected = (selected - 1);
+                    if (selected < 0)
+                        selected = noitems + selected;
+                } else if (event.key.keysym.sym == SDLK_RETURN) {
+                    if (selected == 0) {
+                        while (mRunning) {
+                            handleEvents();
+                            handleCharacter();
+                            handleBullets();
+                            renderScore();
+                            render();
+                        }
+                        mRunning = true;
+                        // menuRunning = false;  // Start game
+                    } else if (selected == 1) {
+                        showCredit();
+                    } else { // selected = 2
+                        mRunning = false;    // Quit game
+                        menuRunning = false;
+                    }
+                } else if (event.key.keysym.sym == SDLK_c) {
+                    menuRunning = false;
+                }
+            }
+        }
+
+        // Clear screen
+        SDL_RenderClear(mRenderer);
+
+        // Render menu items
+        SDL_Surface* startSurface = TTF_RenderText_Solid(font, startText.c_str(), selected == 0 ? selectedColor : white);
+        SDL_Surface* creditSurface = TTF_RenderText_Solid(font, creditText.c_str(), selected == 1 ? selectedColor : white);
+        SDL_Surface* exitSurface = TTF_RenderText_Solid(font, exitText.c_str(), selected == 2 ? selectedColor : white);
+        
+        SDL_Texture* startTexture = SDL_CreateTextureFromSurface(mRenderer, startSurface);
+        SDL_Texture* creditTexture = SDL_CreateTextureFromSurface(mRenderer, creditSurface);
+        SDL_Texture* exitTexture = SDL_CreateTextureFromSurface(mRenderer, exitSurface);
+        
+        int w, h;
+        SDL_Rect startRect, exitRect, creditRect;
+
+        // Position start game text
+        TTF_SizeText(font, startText.c_str(), &w, &h);
+        startRect = {100, 100, w, h};
+
+        // Position credit game text
+        TTF_SizeText(font, creditText.c_str(), &w, &h);
+        creditRect = {100, 150, w, h};
+
+        // Position exit text
+        TTF_SizeText(font, exitText.c_str(), &w, &h);
+        exitRect = {100, 200, w, h};
+
+        SDL_RenderCopy(mRenderer, startTexture, nullptr, &startRect);
+        SDL_RenderCopy(mRenderer, creditTexture, nullptr, &creditRect);
+        SDL_RenderCopy(mRenderer, exitTexture, nullptr, &exitRect);
+
+        SDL_FreeSurface(startSurface);
+        SDL_FreeSurface(creditSurface);
+        SDL_FreeSurface(exitSurface);
+        SDL_DestroyTexture(startTexture);
+        SDL_DestroyTexture(creditTexture);
+        SDL_DestroyTexture(exitTexture);
+
+        SDL_RenderPresent(mRenderer);
+    }
+
+    TTF_CloseFont(font);
+}
+
+void Game::showCredit()
+{
+    bool creditRunning = true;
+    SDL_Event e;
+
+    TTF_Font* font = TTF_OpenFont("../resources/fonts/Eater-Regular.ttf", 15);
+
+    while (creditRunning) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_c)) {
+                // Exit the credits screen
+                creditRunning = false;
+            }
+        }
+
+        SDL_SetRenderDrawColor(mRenderer, 50, 50, 50, 255);  // Grey background for credits
+        SDL_RenderClear(mRenderer);
+
+        // Render "Credits" Text
+        SDL_Color color = {255, 255, 255, 255};
+        SDL_Surface* surface = TTF_RenderText_Solid(font, "Credits Screen - Press C to Close", color);
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(mRenderer, surface);
+        SDL_Rect textRect = {100, 100, surface->w, surface->h};
+        SDL_RenderCopy(mRenderer, texture, nullptr, &textRect);
+
+        SDL_FreeSurface(surface);
+        SDL_DestroyTexture(texture);
+
+        SDL_RenderPresent(mRenderer);
+    }
+
+    TTF_CloseFont(font);
 }
 
 void Game::handleEvents()
@@ -130,6 +273,9 @@ void Game::handleEvents()
             }
             else if (event.key.keysym.sym == SDLK_RIGHT) {
                 lastMove = 3;
+            }
+            else if (event.key.keysym.sym == SDLK_c) {
+                mRunning = false;
             }
         }
     }
@@ -256,10 +402,8 @@ bool Game::renderScore()
     SDL_RenderCopy(mRenderer, textTexture, NULL, &textRect);
 
     SDL_DestroyTexture(textTexture);
+
     TTF_CloseFont(font);
-    TTF_Quit();
-    /*
-    */
 
     return true;
 }

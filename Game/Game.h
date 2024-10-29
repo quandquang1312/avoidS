@@ -20,6 +20,10 @@ public:
     bool init(const std::string title, const int width, const int height);
     void run();
 
+    // Screens
+    void showMenu();
+    void showCredit();
+
     // Load texture
     bool loadTexture(const std::string& fifePath);
     bool loadBulletTexture(const std::string& filePath);
@@ -60,7 +64,7 @@ private:
 
     // Scores
     float m_score;
-    // TTF_Font* font; // = TTF_OpenFont("../resources/fonts/Eater-Regular.ttf", 35);
+    TTF_Font* m_font; // = TTF_OpenFont("../resources/fonts/Eater-Regular.ttf", 35);
 
     float MOVE_SPEED;
     Uint32 lastMoveTime;

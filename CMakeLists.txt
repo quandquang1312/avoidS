@@ -3,12 +3,12 @@ project(AvoidS)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Include FindPkgConfigrr
+include(FindPkgConfig)
+
 # SDL2
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
-
-# Include FindPkgConfig at the top
-include(FindPkgConfig)
 
 # SDL2 TTF
 pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
